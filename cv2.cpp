@@ -18,51 +18,6 @@ void dbprint(const char* filename, int line, const char* funcname, const char* f
 using namespace cv;
 
 static VALUE mCV2;
-static VALUE cMat;
-
-struct WrapMat {
-    cv::Mat* mat;
-};
-
-static const rb_data_type_t mat_type {
-    "Mat",
-    {NULL, NULL, NULL},
-    NULL, NULL,
-    RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-static cv::Mat* get_mat(VALUE self){
-    WrapMat* ptr;
-    TypedData_Get_Struct(self, struct WrapMat, &mat_type, ptr);
-    return ptr->mat;
-}
-
-static void wrap_mat_free(WrapMat* ptr){
-    delete ptr->mat;
-    ruby_xfree(ptr);
-}
-
-static VALUE wrap_mat_alloc(VALUE klass){
-    struct WrapMat* ptr = nullptr;
-    VALUE ret = TypedData_Make_Struct(klass, struct WrapMat, &mat_type, ptr);
-    ptr->mat = new cv::Mat();
-    return ret;
-}
-
-static VALUE wrap_mat_init(VALUE self){
-    return Qnil;
-}
-
-static VALUE wrap_imread_orig(VALUE self, VALUE filename, VALUE flags){
-    const char* raw_filename = RSTRING_PTR(filename);
-    int raw_flags = NUM2INT(flags);
-    cv::Mat m = cv::imread(raw_filename, raw_flags);
-    struct WrapMat* ptr = nullptr;
-    VALUE ret = TypedData_Make_Struct(cMat, struct WrapMat, &mat_type, ptr);
-    ptr->mat = new cv::Mat();
-    *ptr->mat = m;
-    return ret;
-}
 
 const char* db_get_class_name(VALUE o){
     VALUE vtmp1 = rb_funcall(o, rb_intern("class"), 0, 0);
@@ -280,9 +235,5 @@ void Init_cv2(){
 
     rb_define_module_function(mCV2, "imread", RUBY_METHOD_FUNC(wrap_imread), 2);
     rb_define_module_function(mCV2, "circle_test", RUBY_METHOD_FUNC(wrap_circle_test), 1);
-
-    cMat = rb_define_class_under(mCV2, "Mat", rb_cObject);
-    rb_define_alloc_func(cMat, wrap_mat_alloc);
-    rb_define_private_method(cMat, "initialize", RUBY_METHOD_FUNC(wrap_mat_init), 0);
 }
 }
